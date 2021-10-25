@@ -31,7 +31,7 @@ start_pm:
 	
 	;jmp $
 
-	jmp 0x08:0x2000
+	jmp 0x08:0x5000
 ;jmp $
 
 times 512 - ($ - $$) db 0

@@ -5,8 +5,8 @@ ASM_FILES = boot second_stage
 BIN_FILES = $(ASM_FILES:%=%.bin)
 
 run: $(ASM_FILES) makeC
-	dd if=/dev/zero of=OS.bin bs=512 count=3000
-	cat $(BIN_FILES) kernel.bin test_font.bin > temp.bin
+	dd if=/dev/zero of=OS.bin bs=512 count=3100
+	cat $(BIN_FILES) test_font.bin kernel.bin > temp.bin
 	dd if=temp.bin of=OS.bin conv=notrunc
 	rm -rf temp.bin
 	qemu-system-i386 -drive format=raw,file=OS.bin,if=ide,index=0,media=disk
