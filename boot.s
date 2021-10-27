@@ -55,6 +55,9 @@ jc failed
 mov ax, 0x02
 int 0x10
 
+mov dl, [drive_num]
+mov [0x1500], dl
+
 jmp 0x0:0x7E00
 
 jmp $
