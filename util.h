@@ -41,11 +41,114 @@ volatile uint8_t *TextFont = (volatile uint8_t *)0x2000;
 // Current cursor position
 static uint16_t cursor_pos;
 
-// All possible keyboard values
-const uint8_t *stascii = (uint8_t*)"\x00\x1B" "1234567890-=" "\x08"
-		"\x00" "qwertyuiop[]" "\x0D\x1D" "asdfghjkl;'" "\x00" "\\"
-		"zxcvbnm,./" "\x00\x00\x00" " ";
+// cx, cy - Cursor x, Cursor y. Used for accurate cursor positions.
+static uint16_t cx, cy;
 
+// Keyboard scancodes.
+enum Scancodes
+{
+	esc=	0x01,
+	n_1=	0x02,
+	n_2=	0x03,
+	n_3=	0x04,
+	n_4=	0x05,
+	n_5=	0x06,
+	n_6=	0x07,
+	n_7=	0x08,
+	n_8=	0x09,
+	n_9=	0x0A,
+	n_0=	0x0B,
+	minus=	0x0C,
+	equals=	0x0D,
+	back=	0x0E,
+	tab=	0x0F,
+	q=	0x10,
+	w=	0x11,
+	e=	0x12,
+	r=	0x13,
+	t=	0x14,
+	y=	0x15,
+	u=	0x16,
+	i=	0x17,
+	o=	0x18,
+	p=	0x19,
+	enter=	0x1C,
+	a=	0x1E,
+	s=	0x1F,
+	d=	0x20,
+	f=	0x21,
+	g=	0x22,
+	h=	0x23,
+	j=	0x24,
+	k=	0x25,
+	l=	0x26,
+	z=	0x2C,
+	x=	0x2D,
+	c=	0x2E,
+	v=	0x2F,
+	b=	0x30,
+	n=	0x31,
+	m=	0x32,
+	space=	0x39
+};
+
+typedef struct
+{
+	uint8_t val;
+	union {
+		struct {
+			enum Scancodes codes;
+		};
+	};
+} Scancode;
+
+/*
+ * Struct to represent each scancode value.
+ * */
+const Scancode scancodes[] = {
+	[esc] =		{.val = '\0'},
+	[n_1] = 	{.val = '1'},
+	[n_2] = 	{.val = '2'},
+	[n_3] = 	{.val = '3'},
+	[n_4] = 	{.val = '4'},
+	[n_5] = 	{.val = '5'},
+	[n_6] = 	{.val = '6'},
+	[n_7] = 	{.val = '7'},
+	[n_8] = 	{.val = '8'},
+	[n_9] = 	{.val = '9'},
+	[n_0] = 	{.val = '0'},
+	[minus] =	{.val = '-'},
+	[equals]=	{.val = '='},
+	[tab]=		{.val = '\t'},
+	[enter]=	{.val = '\n'},
+	[a]=		{.val = 'a'},
+	[b]=		{.val = 'b'},
+	[c]=		{.val = 'c'},
+	[d]=		{.val = 'd'},
+	[e]=		{.val = 'e'},
+	[f]=		{.val = 'f'},
+	[g]=		{.val = 'g'},
+	[h]=		{.val = 'h'},
+	[i]=		{.val = 'i'},
+	[j]=		{.val = 'j'},
+	[k]=		{.val = 'k'},
+	[l]=		{.val = 'l'},
+	[m]=		{.val = 'm'},
+	[n]=		{.val = 'n'},
+	[o]=		{.val = 'o'},
+	[p]=		{.val = 'p'},
+	[q]=		{.val = 'q'},
+	[r]=		{.val = 'r'},
+	[s]=		{.val = 's'},
+	[t]=		{.val = 't'},
+	[u]=		{.val = 'u'},
+	[v]=		{.val = 'v'},
+	[w]=		{.val = 'w'},
+	[x]=		{.val = 'x'},
+	[y]=		{.val = 'y'},
+	[z]=		{.val = 'z'},
+	[space]=	{.val = ' '}
+};
 
 void reset_AVidMem()
 {
@@ -67,40 +170,11 @@ void outb(uint16_t port, uint8_t data)
 {
 	__asm__ __volatile__ ("outb %1, %0" : : "dN" (port), "a" (data));
 }
+//#include "include/idt.h"
 
 uint16_t make_colored(Colors fore, Colors back)
 {
 	return (uint16_t) (back << 4) | (fore & 0x0F);
-}
-
-void update_cursor(uint16_t pos)
-{	
-	if(pos > 2000) pos = 2000;
-	if(pos < 0) pos = 0;
-	
-	outb(0x3D4, 0x0F);
-	outb(0x3D5, (uint8_t) pos & 0xFF);
-	outb(0x3D4, 0x0E);
-	outb(0x3D5, (uint8_t) (pos >> 8) & 0xFF);
-
-	cursor_pos = pos;
-}
-
-void clear_screen(uint64_t color)
-{
-	uint64_t val = 0;
-	val += color << 8;
-	val += color << 24;
-	val += color << 40;
-	val += color << 56;
-
-	for(uint64_t *i = (uint64_t *)VidMem; i < (uint64_t *)VidMem+4000; i++)
-	{
-		*i = val;
-	}
-
-	cursor_pos = 0;
-	update_cursor(0);
 }
 
 /*
@@ -120,133 +194,41 @@ void clear_screen(uint64_t color)
 #define YOB	make_colored(yellow, black)
 #define LGROB	make_colored(l_gray, black)
 
-uint16_t Coords(uint8_t x, uint8_t y)
-{
-	return y * WIDTH + x;
-}
-
-/*
- * CPutC - Colored Text
- *
- * Put characters in colored form.
- * */
-void CPutC(uint8_t c, uint16_t colored_attrib, uint16_t pos)
-{
-	*(AVidMem + pos) = c | (colored_attrib << 8);
-}
-
-/*
- * PutC - Display general text.
- *
- * ------------		NOT USED	------------
- * */
-void PutC(uint8_t c, uint16_t index)
-{
-	*(VidMem + index * 2) = c;
-}
-
-uint32_t strlen(const uint8_t *string)
-{
-	uint32_t length = 0;
+void update_cursor(uint16_t pos)
+{	
+	if(pos > 2000) pos = 2000;
+	if(pos < 0) pos = 0;
 	
-	while(string[length] != 0)
-		length++;
+	outb(0x3D4, 0x0F);
+	outb(0x3D5, (uint8_t) pos & 0xFF);
+	outb(0x3D4, 0x0E);
+	outb(0x3D5, (uint8_t) (pos >> 8) & 0xFF);
 
-	return length;
+	cursor_pos = pos;
 }
 
-/*
- * Print - Print multiple charactes to screen in string form.
- *
- * ------------		NOT USED	------------
- * */
-void _Print(const int8_t *str)
+uint16_t Coords(uint8_t _x, uint8_t _y)
 {
-	uint8_t *ptr = (uint8_t *)str;
-	uint16_t index = cursor_pos;
-	while(*ptr != 0)
-	{
-		//PutC(*str, index);
-		*(VidMem + index * 2) = *ptr;
-		//*VidMem+=15;
-		index++;
-		ptr++;
-	}
-
-	index+=WIDTH-strlen((const uint8_t*)str);
-	update_cursor(index);
+	cx = _x;
+	cy = _y;
+	return _y * WIDTH + _x;
 }
 
-/*
- * Print - Print multiple characters to screen in string form.
- * 
- * Print in colored form via AVidMem.
- *
- * Args:
- * 	*str - String to print
- * 	colored_attrib - Value returned from make_colored for the foreground/background color
- * 	end - 0 for newline, 1 for nothing.
- * */
-void Print(const int8_t *str, uint16_t colored_attrib, uint8_t end)
+void clear_screen(uint32_t color)
 {
-	uint8_t *ptr = (uint8_t *)str;
-	uint16_t index = cursor_pos;
-	uint16_t curr = 0;
-
-	while(*ptr != 0)
+	
+	uint32_t i = 0;
+	while(i < (80 * 25 * 2))
 	{
-		switch(*ptr)
-		{
-			case 0xA:
-			{
-				index+=WIDTH-curr;
-				curr=0;
-				break;
-			}
-			case 0xD:
-			{
-				index -= index % WIDTH;
-				//curr=0;
-				break;
-			}
-			case 0x9:
-			{
-				index += 2;
-				curr+=2;
-				break;
-			}
-			default:
-			{
-				CPutC(*ptr, colored_attrib, index);
-				index++;
-				curr++;
-				break;
-			}
-		}
-
-		ptr++;
+	    *(VidMem + i) = ' ';
+	    i++;
+	    *(VidMem + i) = white;
+	    i++;
 	}
-
-	if(end == 0)
-		index+=WIDTH-strlen((const uint8_t *)str);
-	update_cursor(index);
-}
-
-uint8_t get_input()
-{
-	uint8_t scancode	= 0;
-	uint8_t char_value	= 0;
-	uint8_t tb		= 0;
-
-	while(1)
-	{
-		tb = inb(0x64);
-		if(tb & 1) break;
-	}
-
-	scancode = inb(0x60);
-	char_value = stascii[scancode];
-	return char_value;
+	reset_VidMem();
+	reset_AVidMem();
+	
+	update_cursor(Coords(5, 1));
 }
 
 void init_cursor()
@@ -257,5 +239,6 @@ void init_cursor()
 	outb(0x3D5, (inb(0x3D5) & 0xE0) | 25);	
 }
 
+#include "include/idt.h"
 
 #endif

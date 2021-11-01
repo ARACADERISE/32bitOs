@@ -13,12 +13,15 @@ run: $(ASM_FILES) makeC
 
 
 $(ASM_FILES):
-	fasm $@.s $@.bin
-	fasm test_font.s test_font.bin
+	nasm -f bin -o $@.bin $@.s
+	nasm -f bin -o test_font.bin test_font.s
+	nasm -felf32 -o idt.o idt.asm
+	#fasm $@.s $@.bin
+	#fasm test_font.s test_font.bin
 
 makeC:
 	$(CC) $(FLAGS)
-	ld -m elf_i386 -Tkernel.ld kernel.o --oformat binary -o kernel.bin
+	ld -m elf_i386 -Tkernel.ld kernel.o idt.o --oformat binary -o kernel.bin
 
 clean:
 	rm -rf *.o

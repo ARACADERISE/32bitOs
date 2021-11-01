@@ -1,9 +1,9 @@
-org 0x7E00
+[org 0x7E00]
 use16
 
 jmp enter_pm
 
-include "gdt.asm"
+%include "gdt.asm"
 
 enter_pm:
 	in al, 0x92
