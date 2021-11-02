@@ -3,8 +3,8 @@
 
 #include "include/stdint.h"
 
-#define WIDTH	80
-#define HEIGHT	25
+#define WIDTH	800
+#define HEIGHT	600
 
 typedef enum
 {
@@ -30,10 +30,10 @@ typedef enum
 volatile uint8_t *DriveNum = (volatile uint8_t *)0x1500;
 
 // Regular Text.
-volatile uint8_t *VidMem = (volatile uint8_t *)0xB8000;
+//volatile uint8_t *VidMem = (volatile uint8_t *)0xB8000;
 
 // Colored Text.
-volatile uint16_t *AVidMem = (volatile uint16_t *)0xB8000;
+//volatile uint16_t *AVidMem = (volatile uint16_t *)0xB8000;
 
 // Text Font
 volatile uint8_t *TextFont = (volatile uint8_t *)0x2000;
@@ -150,15 +150,14 @@ const Scancode scancodes[] = {
 	[space]=	{.val = ' '}
 };
 
-void reset_AVidMem()
-{
-	AVidMem = (volatile uint16_t *)0xB8000;
-}
-void reset_VidMem()
-{
-	VidMem = (volatile uint8_t *)0xB8000;
-}
-
+//void reset_AVidMem()
+//{
+//	AVidMem = (volatile uint16_t *)0xB8000;
+//}
+//void reset_VidMem()
+//{
+//	VidMem = (volatile uint8_t *)0xB8000;
+//}
 uint8_t inb(uint16_t port)
 {
 	uint8_t rv;
@@ -214,21 +213,33 @@ uint16_t Coords(uint8_t _x, uint8_t _y)
 	return _y * WIDTH + _x;
 }
 
-void clear_screen(uint32_t color)
+void clear_screen()
 {
+	/*
+	 * --------	KEEP FOR VGA VIDEO MODE 32-bit OS	--------
+	 * */	
+//	uint32_t i = 0;
+//	while(i < (80 * 25 * 2))
+//	{
+//	    *(VidMem + i) = ' ';
+//	    i++;
+//	    *(VidMem + i) = white;
+//	    i++;
+//	}
+//	reset_VidMem();
+//	reset_AVidMem();
 	
-	uint32_t i = 0;
-	while(i < (80 * 25 * 2))
-	{
-	    *(VidMem + i) = ' ';
-	    i++;
-	    *(VidMem + i) = white;
-	    i++;
-	}
-	reset_VidMem();
-	reset_AVidMem();
+//	update_cursor(Coords(5, 1));
 	
-	update_cursor(Coords(5, 1));
+	/*
+	 * --------	VESA VIDEO MODE 32-bit OS	--------
+	 * */
+	uint32_t i;
+	uint32_t *FrameBuffer = (uint32_t *)*(uint32_t *)0x4028;
+	for(i = 0; i < WIDTH*HEIGHT; i++)
+		FrameBuffer[i] = 0x00000000;
+	return;
+	//reset_FrameBuffer();
 }
 
 void init_cursor()

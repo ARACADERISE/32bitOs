@@ -8,22 +8,22 @@
  *
  * Put characters in colored form.
  * */
-void CPutC(uint8_t c, uint16_t colored_attrib)
-{
-	*(AVidMem + cursor_pos) = c | (colored_attrib << 8);
-	update_cursor(cursor_pos+1);
-}
+//void CPutC(uint8_t c, uint16_t colored_attrib)
+//{
+//	*(AVidMem + cursor_pos) = c | (colored_attrib << 8);
+//	update_cursor(cursor_pos+1);
+//}
 
 /*
  * PutC - Display general text.
  *
  * ------------		NOT USED	------------
  * */
-void PutC(uint8_t c)
-{
-	*(VidMem + cursor_pos * 2) = c;
-	update_cursor(cursor_pos+1);
-}
+//void PutC(uint8_t c)
+//{
+//	*(VidMem + cursor_pos * 2) = c;
+//	update_cursor(cursor_pos+1);
+//}
 
 /*
  * Print - Print multiple characters to screen in string form.
@@ -35,75 +35,75 @@ void PutC(uint8_t c)
  * 	colored_attrib - Value returned from make_colored for the foreground/background color
  * 	end - 0 for newline, 1 for nothing.
  * */
-void Print(const uint8_t *str, uint16_t colored_attrib, uint8_t end)
-{
-	uint8_t *ptr = (uint8_t *)str;
-	uint16_t curr = 0;
-
-	while(*ptr != 0)
-	{
-		switch(*ptr)
-		{
-			case 0xA:
-			{
-				cursor_pos+=WIDTH-curr;
-				cy++;
-				curr=0;
-				break;
-			}
-			case 0xD:
-			{
-				cursor_pos -= cursor_pos % WIDTH;
-				break;
-			}
-			case 0x9:
-			{
-				cursor_pos += 2;
-				curr+=2;
-				break;
-			}
-			default:
-			{
-				CPutC(*ptr, colored_attrib);
-				curr++;
-				break;
-			}
-		}
-
-		ptr++;
-	}
-
-	if(end == 0)
-	{
-		cursor_pos+=WIDTH-strlen((const uint8_t *)str);
-		cy++;
-		update_cursor(cursor_pos);
-	}
-	update_cursor(cursor_pos);
-}
+//void Print(const uint8_t *str, uint16_t colored_attrib, uint8_t end)
+//{
+//	uint8_t *ptr = (uint8_t *)str;
+//	uint16_t curr = 0;
+//
+//	while(*ptr != 0)
+//	{
+//		switch(*ptr)
+//		{
+//			case 0xA:
+//			{
+//				cursor_pos+=WIDTH-curr;
+//				cy++;
+//				curr=0;
+//				break;
+//			}
+//			case 0xD:
+//			{
+//				cursor_pos -= cursor_pos % WIDTH;
+//				break;
+//			}
+//			case 0x9:
+//			{
+//				cursor_pos += 2;
+//				curr+=2;
+//				break;
+//			}
+//			default:
+//			{
+//				CPutC(*ptr, colored_attrib);
+//				curr++;
+//				break;
+//			}
+//		}
+//
+//		ptr++;
+//	}
+//
+//	if(end == 0)
+//	{
+//		cursor_pos+=WIDTH-strlen((const uint8_t *)str);
+//		cy++;
+//		update_cursor(cursor_pos);
+//	}
+//	update_cursor(cursor_pos);
+//}
 
 /*
  * Print - Print multiple charactes to screen in string form.
  *
  * ------------		NOT USED	------------
  * */
-void _Print(const int8_t *str)
-{
-	uint8_t *ptr = (uint8_t *)str;
-	uint16_t index = cursor_pos;
-	while(*ptr != 0)
-	{
-		//PutC(*str, index);
-		*(VidMem + index * 2) = *ptr;
-		//*VidMem+=15;
-		index++;
-		ptr++;
-	}
-
-	index+=WIDTH-strlen((const uint8_t*)str);
-	cy++;
-	update_cursor(index);
-}
+//void _Print(const int8_t *str)
+//{
+//	uint8_t *ptr = (uint8_t *)str;
+//	uint16_t index = cursor_pos;
+//	while(*ptr != 0)
+//	{
+//		//PutC(*str, index);
+//		*(VidMem + index * 2) = *ptr;
+//		//*VidMem+=15;
+//		index++;
+//		ptr++;
+//	}
+//
+//	index+=WIDTH-strlen((const uint8_t*)str);
+//	cy++;
+///	update_cursor(index);
+//}
 
 /*
  * getc - Get character input.
