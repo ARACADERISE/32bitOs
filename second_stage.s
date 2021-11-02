@@ -42,11 +42,8 @@ print_hex:
 		ret
 
 setup_vesa:
-	mov ax, 0x4F02
-	mov bx, 0x4118
-	int 0x10
-	cmp ax, 0x004F
-	jne err
+
+	sti
 
 	xor ax, ax
 	mov es, ax
@@ -73,18 +70,14 @@ find_mode:
 	add si, 2
 	mov [offset], si
 	mov [mode], dx
-	xor ax, ax
-	mov fs, ax
 
 	cmp word[mode], 0xFFFF
 	je end
 
-	push es
 	mov ax, 0x4F01
 	mov cx, [mode]
 	mov di, mode_info_block
 	int 0x10
-	pop es
 
 	cmp ax, 0x4F
 	jne err
@@ -106,6 +99,7 @@ find_mode:
 	or bx, 0x4000
 	xor di, di
 	int 0x10
+
 	cmp ax, 0x4F
 	jne err
 
