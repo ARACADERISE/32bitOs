@@ -6,6 +6,9 @@
 #define WIDTH	800
 #define HEIGHT	600
 
+/*
+ * -------- 	KEEP FOR VGA 32-bit OS	 --------
+ * */
 typedef enum
 {
 	black,
@@ -26,6 +29,9 @@ typedef enum
 	white = 0xF
 } Colors;
 
+// Make RGB color for pixels.
+#define MakeColor(R, G, B) R*65536 + G*256 + B
+
 // Drive number
 volatile uint8_t *DriveNum = (volatile uint8_t *)0x1500;
 
@@ -43,6 +49,8 @@ static uint16_t cursor_pos;
 
 // cx, cy - Cursor x, Cursor y. Used for accurate cursor positions.
 static uint16_t cx, cy;
+
+#define GetCoords()	(cx * 8) + (cy * 16 * WIDTH)
 
 // Keyboard scancodes.
 enum Scancodes
@@ -171,6 +179,9 @@ void outb(uint16_t port, uint8_t data)
 }
 //#include "include/idt.h"
 
+/*
+ * --------	FOR VGA 32-bit OS	--------
+ * */
 uint16_t make_colored(Colors fore, Colors back)
 {
 	return (uint16_t) (back << 4) | (fore & 0x0F);
@@ -178,6 +189,8 @@ uint16_t make_colored(Colors fore, Colors back)
 
 /*
  * Shortcuts for colored printing.
+ *
+ * --------	FOR VGA 32-bit OS	--------
  * */
 #define WOB	make_colored(white,black)
 #define BOB	make_colored(blue, black)
@@ -193,17 +206,26 @@ uint16_t make_colored(Colors fore, Colors back)
 #define YOB	make_colored(yellow, black)
 #define LGROB	make_colored(l_gray, black)
 
-void update_cursor(uint16_t pos)
+void update_cursor()
 {	
-	if(pos > 2000) pos = 2000;
-	if(pos < 0) pos = 0;
+	//if(pos > 2000) pos = 2000;
+	//if(pos < 0) pos = 0;
 	
-	outb(0x3D4, 0x0F);
-	outb(0x3D5, (uint8_t) pos & 0xFF);
-	outb(0x3D4, 0x0E);
-	outb(0x3D5, (uint8_t) (pos >> 8) & 0xFF);
+	//outb(0x3D4, 0x0F);
+	//outb(0x3D5, (uint8_t) pos & 0xFF);
+	//outb(0x3D4, 0x0E);
+	//outb(0x3D5, (uint8_t) (pos >> 8) & 0xFF);
 
-	cursor_pos = pos;
+	//cursor_pos = pos;
+	uint32_t *fb = (uint32_t *)*(uint32_t *)0x4028;
+	fb += GetCoords();
+	fb += (800 * 15);
+	TextFont = (uint8_t *)(0x2000 + ((127 * 16 ) - 1));
+	for(int8_t b = 7; b >= 0; b--)
+	{
+		*fb = (*TextFont & (1 << b)) ? MakeColor(255, 255, 255) : MakeColor(0, 0, 0);
+		fb++;
+	}
 }
 
 uint16_t Coords(uint8_t _x, uint8_t _y)
@@ -237,17 +259,22 @@ void clear_screen()
 	uint32_t i;
 	uint32_t *FrameBuffer = (uint32_t *)*(uint32_t *)0x4028;
 	for(i = 0; i < WIDTH*HEIGHT; i++)
-		FrameBuffer[i] = 0x00000000;
+		FrameBuffer[i] = MakeColor(0, 0, 0);
 	return;
 	//reset_FrameBuffer();
 }
 
 void init_cursor()
 {
-	outb(0x3D4, 0x0A);
-	outb(0x3D5, (inb(0x3D5) & 0xC0) | 0);
-	outb(0x3D4, 0x0B);
-	outb(0x3D5, (inb(0x3D5) & 0xE0) | 25);	
+	/*
+	 * --------	KEEP FOR VGA VIDEO MODE 32-bit OS	--------	
+	 * */
+	//outb(0x3D4, 0x0A);
+	//outb(0x3D5, (inb(0x3D5) & 0xC0) | 0);
+	//outb(0x3D4, 0x0B);
+	//outb(0x3D5, (inb(0x3D5) & 0xE0) | 25);
+	
+	cx = cy = 0;	
 }
 
 #include "include/idt.h"

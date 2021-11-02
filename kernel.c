@@ -6,8 +6,8 @@
 __attribute__((section("kernel_entry"))) void kernel_main(void)
 {
 	init_cursor();
-	update_cursor(Coords(5, 1));
-
+	//update_cursor(Coords(5, 1));
+	update_cursor();
 	idt_init();
 
 	
@@ -17,21 +17,33 @@ __attribute__((section("kernel_entry"))) void kernel_main(void)
 	//fb[3] = 0x00EEEEEE;
 	
 	clear_screen();	
+	cx = cy = 0;
 	
 	uint32_t *FrameBuffer = (uint32_t *)*(uint32_t *) 0x4028;
-	FrameBuffer += 1920 + 20;
-	TextFont = (uint8_t *)(0x2000 + (('"' * 16) - 16));
+	FrameBuffer += GetCoords();
+	TextFont = (uint8_t *)(0x2000 + (('B' * 16) - 16));
 	
 	for(uint8_t line = 0; line < 16; line++)
 	{
 		for(int8_t bit = 7; bit >= 0; bit--)
 		{
-			*FrameBuffer = (TextFont[line] & (1 << bit)) ? 0x00EEEEEE : 0x00000000;
+			*FrameBuffer = (TextFont[line] & (1 << bit)) ? MakeColor(124, 253, 236) : MakeColor(0, 0, 0);
 			FrameBuffer++;
 		}
 		FrameBuffer += (WIDTH - 8);
 	}
-		
+	cx++;
+
+	update_cursor();
+	//fb = (uint32_t *)*(uint32_t *) 0x4028;
+	//fb += GetCoords();
+	//fb += (800 * 15);
+	//TextFont = (uint8_t *)(0x2000 + ((127 * 16) - 1));
+	//for(int8_t bit = 7; bit >= 0; bit--)
+	//{
+	//	*fb = (*TextFont & (1 << bit)) ? MakeColor(0, 0, 0) : MakeColor(0, 0, 0);
+	//	fb++;
+	//}
 	//Print(
 	//	(const uint8_t *)"MocaOS\n\tCreated by MocaCDeveloper\n\t"
 	//			 "Copyright 2021, All Rights Reserved.\n\t"

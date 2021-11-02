@@ -30,6 +30,8 @@ print_hex:
 	jmp .get
 .end:
 	mov si, hex_val
+	call print
+print:
 	mov ah, 0x0e
 	.loop:
 		mov al, [si]

@@ -126,7 +126,7 @@ uint8_t getc(void)
 	if(scancode==0x1C)
 	{
 		cy++;
-		update_cursor(Coords(cx, cy));
+		update_cursor();
 		return '0';
 	}
 	
