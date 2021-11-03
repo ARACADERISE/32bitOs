@@ -9,16 +9,10 @@ __attribute__((section("kernel_entry"))) void kernel_main(void)
 	//update_cursor(Coords(5, 1));
 	update_cursor();
 	idt_init();
-
-	
-	//fb[0] = 0x00EEEEEE;
-	//fb[1] = 0x00EEEEEE;
-	//fb[2] = 0x00EEEEEE;
-	//fb[3] = 0x00EEEEEE;
 	
 	clear_screen();	
 	cx = cy = 0;
-	
+
 	uint32_t *FrameBuffer = (uint32_t *)*(uint32_t *) 0x4028;
 	FrameBuffer += GetCoords();
 	TextFont = (uint8_t *)(0x2000 + (('B' * 16) - 16));
@@ -35,6 +29,18 @@ __attribute__((section("kernel_entry"))) void kernel_main(void)
 	cx++;
 
 	update_cursor();
+	uint8_t c = getc();
+	FrameBuffer = (uint32_t *)*(uint32_t *)0x4028;
+	TextFont = (uint8_t *)(0x2000 + ((c * 16) - 16));
+	for(uint8_t l = 0; l < 16; l++)
+	{
+		for(int8_t b = 7; b >= 0; b--)
+		{
+			*FrameBuffer = (TextFont[l] & (1 << b)) ? MakeColor(124, 253, 236) : MakeColor(0, 0, 0);
+			FrameBuffer++;
+		}
+		FrameBuffer += (WIDTH - 8);
+	}
 	//fb = (uint32_t *)*(uint32_t *) 0x4028;
 	//fb += GetCoords();
 	//fb += (800 * 15);
