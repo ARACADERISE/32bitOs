@@ -1635,7 +1635,7 @@ db 00000000b,\
    00000000b,\
    00000000b,\
    00000000b,\
-   11111110b
+   11111111b
 
 ;; End of visible ascii characters
    times 2048-($-$$) db 0

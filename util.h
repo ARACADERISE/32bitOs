@@ -3,43 +3,14 @@
 
 #include "include/stdint.h"
 
-#define WIDTH	800
-#define HEIGHT	600
-
-/*
- * -------- 	KEEP FOR VGA 32-bit OS	 --------
- * */
-typedef enum
-{
-	black,
-	blue,
-	green,
-	cyan,
-	red,
-	mag,
-	brown,
-	l_gray,
-	d_gray,
-	l_blue,
-	l_green = 0xA,
-	l_cyan = 0xB,
-	l_red = 0xC,
-	l_mag = 0xD,
-	yellow = 0xE,
-	white = 0xF
-} Colors;
+#define WIDTH	1024//800
+#define HEIGHT	768//600
 
 // Make RGB color for pixels.
 #define MakeColor(R, G, B) R*65536 + G*256 + B
 
 // Drive number
 volatile uint8_t *DriveNum = (volatile uint8_t *)0x1500;
-
-// Regular Text.
-//volatile uint8_t *VidMem = (volatile uint8_t *)0xB8000;
-
-// Colored Text.
-//volatile uint16_t *AVidMem = (volatile uint16_t *)0xB8000;
 
 // Text Font
 volatile uint8_t *TextFont = (volatile uint8_t *)0x2000;
@@ -50,7 +21,9 @@ static uint16_t cursor_pos;
 // cx, cy - Cursor x, Cursor y. Used for accurate cursor positions.
 static uint16_t cx, cy;
 
-#define GetCoords()	(cx * 8) + (cy * 16 * WIDTH)
+#define GetCoords()	(cx * 9) + (cy * 16 * WIDTH)
+#define FBUF	0x4028
+#define TMEM	0x2000
 
 // Keyboard scancodes.
 enum Scancodes
@@ -155,17 +128,10 @@ const Scancode scancodes[] = {
 	[x]=		{.val = 'x'},
 	[y]=		{.val = 'y'},
 	[z]=		{.val = 'z'},
-	[space]=	{.val = ' '}
+	[space]=	{.val = ' '},
+	[back]=		{.val = '\b'}
 };
 
-//void reset_AVidMem()
-//{
-//	AVidMem = (volatile uint16_t *)0xB8000;
-//}
-//void reset_VidMem()
-//{
-//	VidMem = (volatile uint8_t *)0xB8000;
-//}
 uint8_t inb(uint16_t port)
 {
 	uint8_t rv;
@@ -177,50 +143,15 @@ void outb(uint16_t port, uint8_t data)
 {
 	__asm__ __volatile__ ("outb %1, %0" : : "dN" (port), "a" (data));
 }
-//#include "include/idt.h"
-
-/*
- * --------	FOR VGA 32-bit OS	--------
- * */
-uint16_t make_colored(Colors fore, Colors back)
-{
-	return (uint16_t) (back << 4) | (fore & 0x0F);
-}
-
-/*
- * Shortcuts for colored printing.
- *
- * --------	FOR VGA 32-bit OS	--------
- * */
-#define WOB	make_colored(white,black)
-#define BOB	make_colored(blue, black)
-#define GOB	make_colored(green, black)
-#define COB	make_colored(cyan, black)
-#define ROB	make_colored(red, black)
-#define MOB	make_colored(mag, black)
-#define BROB	make_colored(brown, black)
-#define LBOB	make_colored(l_blue, black)
-#define LGOB	make_colored(l_green, black)
-#define LCOB	make_colored(l_cyan, black)
-#define LMOB	make_colored(l_mag, black)
-#define YOB	make_colored(yellow, black)
-#define LGROB	make_colored(l_gray, black)
 
 void update_cursor()
 {	
-	//if(pos > 2000) pos = 2000;
-	//if(pos < 0) pos = 0;
+	uint32_t *fb = (uint32_t *)*(uint32_t *) FBUF;
 	
-	//outb(0x3D4, 0x0F);
-	//outb(0x3D5, (uint8_t) pos & 0xFF);
-	//outb(0x3D4, 0x0E);
-	//outb(0x3D5, (uint8_t) (pos >> 8) & 0xFF);
-
-	//cursor_pos = pos;
-	uint32_t *fb = (uint32_t *)*(uint32_t *)0x4028;
 	fb += GetCoords();
-	fb += (800 * 15);
-	TextFont = (uint8_t *)(0x2000 + ((127 * 16 ) - 1));
+	fb += (WIDTH * 15);
+
+	TextFont = (uint8_t *)(TMEM + ((127 * 16 ) - 1));
 	for(int8_t b = 7; b >= 0; b--)
 	{
 		*fb = (*TextFont & (1 << b)) ? MakeColor(255, 255, 255) : MakeColor(0, 0, 0);
@@ -228,54 +159,60 @@ void update_cursor()
 	}
 }
 
-uint16_t Coords(uint8_t _x, uint8_t _y)
+void remove_cursor()
 {
-	cx = _x;
-	cy = _y;
-	return _y * WIDTH + _x;
+	uint32_t *fb = (uint32_t *)*(uint32_t *) FBUF;
+	fb += GetCoords();
+	fb += (WIDTH * 15);
+
+	for(int8_t b = 7; b >= 0; b--)
+	{
+		*fb++ = MakeColor(0, 0, 0);
+	}
+}
+
+void Update(uint32_t x, uint32_t y)
+{
+	remove_cursor();
+	cx = x;
+	cy = y;
+	update_cursor();
+}
+
+uint8_t CheckScreen()
+{
+	uint32_t *ss, *ss2;
+
+	if(cy >= 40)
+	{
+		remove_cursor();
+		ss = (uint32_t *)*(uint32_t *)0x4028;
+		ss2 = ss + (1024 * 24);
+		for(uint32_t p = 0; p < 0xBA000; p++)
+			*ss++ = *ss2++;
+		for(uint32_t p = 0; p < 0x6000; p++)
+			*ss++ = MakeColor(0, 0, 0);
+		Update(0, cy-1);
+		return 1;
+	}
+	return 0;
+
+}
+
+void setCoords(uint32_t x, uint32_t y)
+{
+	Update(x, y);
 }
 
 void clear_screen()
 {
-	/*
-	 * --------	KEEP FOR VGA VIDEO MODE 32-bit OS	--------
-	 * */	
-//	uint32_t i = 0;
-//	while(i < (80 * 25 * 2))
-//	{
-//	    *(VidMem + i) = ' ';
-//	    i++;
-//	    *(VidMem + i) = white;
-//	    i++;
-//	}
-//	reset_VidMem();
-//	reset_AVidMem();
-	
-//	update_cursor(Coords(5, 1));
-	
-	/*
-	 * --------	VESA VIDEO MODE 32-bit OS	--------
-	 * */
 	uint32_t i;
 	uint32_t *FrameBuffer = (uint32_t *)*(uint32_t *)0x4028;
 	for(i = 0; i < WIDTH*HEIGHT; i++)
 		FrameBuffer[i] = MakeColor(0, 0, 0);
-	return;
-	//reset_FrameBuffer();
+	Update(0, 0);
 }
 
-void init_cursor()
-{
-	/*
-	 * --------	KEEP FOR VGA VIDEO MODE 32-bit OS	--------	
-	 * */
-	//outb(0x3D4, 0x0A);
-	//outb(0x3D5, (inb(0x3D5) & 0xC0) | 0);
-	//outb(0x3D4, 0x0B);
-	//outb(0x3D5, (inb(0x3D5) & 0xE0) | 25);
-	
-	cx = cy = 0;	
-}
 
 #include "include/idt.h"
 

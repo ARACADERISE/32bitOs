@@ -44,8 +44,8 @@ print:
 		ret
 
 setup_vesa:
-
-	sti
+	
+	;sti
 
 	xor ax, ax
 	mov es, ax
@@ -61,7 +61,7 @@ setup_vesa:
 	mov ax, word[vbe_info_block.video_modes+2]
 	mov [t_segment], ax
 
-	mov ax, [t_segment]
+	;mov ax, [t_segment]
 	mov fs, ax
 	mov si, [offset]
 
@@ -95,7 +95,7 @@ find_mode:
 	mov al, [bpp]
 	cmp al, [mode_info_block.bpp]
 	jne next_mode
-
+	
 	mov ax, 0x4F02
 	mov bx, [mode]
 	or bx, 0x4000
@@ -107,8 +107,6 @@ find_mode:
 
 	jmp enter_pm
 
-	cli
-	hlt
 end:
 	mov ax, 0x0E4E
 	int 0x10
@@ -141,7 +139,7 @@ enter_pm:
 	or eax, 0x01
 	mov cr0, eax
 
-	jmp 0x08:start_pm
+	jmp codeseg:start_pm
 
 
 use32
@@ -159,16 +157,18 @@ start_pm:
 	mov ecx, 64
 	rep movsd
 
-	jmp 0x08:0x5000
+	jmp codeseg:0x5000
 
 hex_val: db '0x0000'
 
-width:		dw 800
-height:		dw 600
+width:		dw 1024
+height:		dw 768
 bpp:		db 32
 t_segment:	dw 0x0
 offset:		dw 0x0
 mode:		dw 0x0
+
+times 512 - ($ - $$) db 0
 
 vbe_info_block:
 	.vbe_signature:			db 'VBE2'

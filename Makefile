@@ -5,7 +5,7 @@ ASM_FILES = boot second_stage
 BIN_FILES = $(ASM_FILES:%=%.bin)
 
 run: $(ASM_FILES) makeC
-	dd if=/dev/zero of=OS.bin bs=512 count=17
+	dd if=/dev/zero of=OS.bin bs=512 count=16
 	cat $(BIN_FILES) test_font.bin kernel.bin > temp.bin
 	dd if=temp.bin of=OS.bin conv=notrunc
 	rm -rf temp.bin

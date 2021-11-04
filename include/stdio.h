@@ -4,116 +4,86 @@
 #include "string.h"
 
 /*
- * CPutC - Colored Text
- *
- * Put characters in colored form.
+ * PutC:
+ * 	Print a character to the string, then return the given character for possible reference.
  * */
-//void CPutC(uint8_t c, uint16_t colored_attrib)
-//{
-//	*(AVidMem + cursor_pos) = c | (colored_attrib << 8);
-//	update_cursor(cursor_pos+1);
-//}
+uint8_t PutC(uint8_t Pchar, uint32_t fg, uint32_t bg)
+{
+	uint32_t *FrameBuffer = (uint32_t *)*(uint32_t *) FBUF;
+	FrameBuffer += GetCoords();
+	
+	TextFont = (uint8_t *)(TMEM + ((Pchar * 16) - 16));
+	for(uint8_t l = 0; l < 16; l++)
+	{
+		for(int8_t b = 8; b >= 0; b--)
+		{
+			*FrameBuffer = (TextFont[l] & (1 << b)) ? fg : bg;
+			FrameBuffer++;
+		}
+		FrameBuffer += (WIDTH - 9);
+	}
+
+	cx++;
+	FrameBuffer -= (WIDTH - 9);
+	update_cursor();
+
+	return Pchar;
+}
+
 
 /*
- * PutC - Display general text.
- *
- * ------------		NOT USED	------------
+ * Print:
+ * 	Print sequence of characters to screen.
  * */
-//void PutC(uint8_t c)
-//{
-//	*(VidMem + cursor_pos * 2) = c;
-//	update_cursor(cursor_pos+1);
-//}
+void Print(uint8_t *string, uint32_t fgcolor, uint32_t bgcolor)
+{
+	remove_cursor();
+	uint32_t *ss, *ss2;
+	while(!(*string == '\0'))
+	{
+		switch(*string)
+		{
+			case '\n':
+			{
+				if(CheckScreen() == 0)	
+					Update(0, cy+1);
+				string++;
+				break;
+			}
+			case '\t':
+			{
+				for(uint8_t i = 0; i < 4; i++)
+				{
+					PutC(' ', MakeColor(0, 0, 0), MakeColor(0, 0, 0));
+					update_cursor();
+				}
+				string++;
+				break;
+			}
+			default:
+			{
+				PutC(*string, fgcolor, bgcolor);
+				string++;
+			}
+		}
+	}
 
-/*
- * Print - Print multiple characters to screen in string form.
- * 
- * Print in colored form via AVidMem.
- *
- * Args:
- * 	*str - String to print
- * 	colored_attrib - Value returned from make_colored for the foreground/background color
- * 	end - 0 for newline, 1 for nothing.
- * */
-//void Print(const uint8_t *str, uint16_t colored_attrib, uint8_t end)
-//{
-//	uint8_t *ptr = (uint8_t *)str;
-//	uint16_t curr = 0;
-//
-//	while(*ptr != 0)
-//	{
-//		switch(*ptr)
-//		{
-//			case 0xA:
-//			{
-//				cursor_pos+=WIDTH-curr;
-//				cy++;
-//				curr=0;
-//				break;
-//			}
-//			case 0xD:
-//			{
-//				cursor_pos -= cursor_pos % WIDTH;
-//				break;
-//			}
-//			case 0x9:
-//			{
-//				cursor_pos += 2;
-//				curr+=2;
-//				break;
-//			}
-//			default:
-//			{
-//				CPutC(*ptr, colored_attrib);
-//				curr++;
-//				break;
-//			}
-//		}
-//
-//		ptr++;
-//	}
-//
-//	if(end == 0)
-//	{
-//		cursor_pos+=WIDTH-strlen((const uint8_t *)str);
-//		cy++;
-//		update_cursor(cursor_pos);
-//	}
-//	update_cursor(cursor_pos);
-//}
-
-/*
- * Print - Print multiple charactes to screen in string form.
- *
- * ------------		NOT USED	------------
- * */
-//void _Print(const int8_t *str)
-//{
-//	uint8_t *ptr = (uint8_t *)str;
-//	uint16_t index = cursor_pos;
-//	while(*ptr != 0)
-//	{
-//		//PutC(*str, index);
-//		*(VidMem + index * 2) = *ptr;
-//		//*VidMem+=15;
-//		index++;
-//		ptr++;
-//	}
-//
-//	index+=WIDTH-strlen((const uint8_t*)str);
-//	cy++;
-///	update_cursor(index);
-//}
+	if(CheckScreen() == 0)
+		Update(0, cy+1);
+}
 
 /*
  * getc - Get character input.
+ *
+ * Args:
+ * 	valid - Are we capable of doing any action at current position?
+ * 		I.E: If we are at `>`, we can't backspace anymore.
  */
-uint8_t getc(void)
+uint8_t getc(uint8_t valid)
 {
 	uint8_t scancode	= 0;
 	uint8_t char_value	= 0;
 	uint8_t tb		= 0;
-	uint8_t old		= 0;
 
 	while(1)
 	{
@@ -124,11 +94,17 @@ uint8_t getc(void)
 	scancode = inb(0x60);
 
 	if(scancode==0x1C)
-	{
-		cy++;
-		update_cursor();
 		return '0';
-	}
+	if(scancode==0x0E && valid)
+	{
+		cx--;
+		PutC('\0', MakeColor(0, 0, 0), MakeColor(0, 0, 0));
+		remove_cursor();
+		cx--;
+		Update(cx, cy);
+		return '\4';
+	} else if(scancode == 0x0E && !(valid))
+		return '\3';
 	
 	char_value = scancodes[scancode].val;
 

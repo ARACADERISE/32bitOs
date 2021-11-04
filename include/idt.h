@@ -17,44 +17,42 @@ typedef struct
 	uint32_t	base;
 } __attribute__((packed)) idtr;
 
+//idt _idt[256];
 extern idt	_idt[256];
 extern uint32_t  isr1;
 static idtr	_idtr;
 
-void idt_set_desc(uint8_t v, uint8_t isr, uint8_t flags)
+void set_gate(uint8_t num, uint32_t base, uint16_t kcs, uint8_t flags)
 {
-	idt *desc = &_idt[v];
-
-	desc->low = (uint32_t)isr & 0xFFFF;
-	desc->kernel_cs = 0x08;
-	desc->attributes = flags;
-	desc->high = (uint32_t)isr >> 16;
-	desc->reserved = 0;
+	_idt[num].reserved = 0x0;
+	_idt[num].low = (base & 0xFFFF);
+	_idt[num].high = (base >> 16) & 0xFFFF;
+	_idt[num].kernel_cs = kcs;
+	_idt[num].attributes = flags | 0x60;
 }
 
-//void idt_init()
-//{
-//	_idtr.base = (uint32_t )&_idt[0];
-//
-//	_idtr.limit = (uint16_t)sizeof(idt) * 256 - 1;
-//
-//	for(uint8_t v = 0; v < 32; v++)
-//	{
-//		idt_set_desc(v, v, 0x8E);
-//	}
-//}
+void memset(void *ptr, uint32_t val, uint32_t c)
+{
+	__asm__ __volatile__ ("cld; rep stosb" : "+c" (c), "+D" (ptr) : "a" (val) : "memory");
+}
+
 extern void loadIDT();
 
 void idt_init()
 {
-	for(uint16_t i = 0; i < 256; i++)
-	{
-		_idt[i].reserved = 0;
-		_idt[i].low = (uint32_t)isr1 & 0xFFFF;
-		_idt[i].kernel_cs = 0x08;
-		_idt[i].attributes = 0x8e;
-		_idt[i].high = (uint32_t)isr1 >> 16;
-	}
+	_idtr.limit = (sizeof(idt) * 256) - 1;
+	_idtr.base = (uint32_t)&_idt;
+
+	memset(&_idt, 0, sizeof(idt) * 256);
+
+	//for(uint16_t i = 0; i < 256; i++)
+	//{
+	//	_idt[i].reserved = 0;
+	//	_idt[i].low = (uint32_t)isr1 & 0xFFFF;
+	//	_idt[i].kernel_cs = 0x08;
+	//	_idt[i].attributes = 0x8e;
+	//	_idt[i].high = (uint32_t)isr1 >> 16;
+	//}
 	
 	outb(0x21, 0xFD);
 	outb(0xA1, 0xFF);

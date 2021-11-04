@@ -5,89 +5,53 @@
 
 __attribute__((section("kernel_entry"))) void kernel_main(void)
 {
-	init_cursor();
-	//update_cursor(Coords(5, 1));
-	update_cursor();
 	idt_init();
-	
 	clear_screen();	
-	cx = cy = 0;
 
-	uint32_t *FrameBuffer = (uint32_t *)*(uint32_t *) 0x4028;
-	FrameBuffer += GetCoords();
-	TextFont = (uint8_t *)(0x2000 + (('B' * 16) - 16));
-	
-	for(uint8_t line = 0; line < 16; line++)
-	{
-		for(int8_t bit = 7; bit >= 0; bit--)
-		{
-			*FrameBuffer = (TextFont[line] & (1 << bit)) ? MakeColor(124, 253, 236) : MakeColor(0, 0, 0);
-			FrameBuffer++;
-		}
-		FrameBuffer += (WIDTH - 8);
-	}
-	cx++;
+	uint8_t c = 0;
+	uint8_t input[8];
+	uint8_t index = 0;
 
-	update_cursor();
-	uint8_t c = getc();
-	FrameBuffer = (uint32_t *)*(uint32_t *)0x4028;
-	TextFont = (uint8_t *)(0x2000 + ((c * 16) - 16));
-	for(uint8_t l = 0; l < 16; l++)
-	{
-		for(int8_t b = 7; b >= 0; b--)
-		{
-			*FrameBuffer = (TextFont[l] & (1 << b)) ? MakeColor(124, 253, 236) : MakeColor(0, 0, 0);
-			FrameBuffer++;
-		}
-		FrameBuffer += (WIDTH - 8);
-	}
-	//fb = (uint32_t *)*(uint32_t *) 0x4028;
-	//fb += GetCoords();
-	//fb += (800 * 15);
-	//TextFont = (uint8_t *)(0x2000 + ((127 * 16) - 1));
-	//for(int8_t bit = 7; bit >= 0; bit--)
-	//{
-	//	*fb = (*TextFont & (1 << bit)) ? MakeColor(0, 0, 0) : MakeColor(0, 0, 0);
-	//	fb++;
-	//}
-	//Print(
-	//	(const uint8_t *)"MocaOS\n\tCreated by MocaCDeveloper\n\t"
-	//			 "Copyright 2021, All Rights Reserved.\n\t"
-	//			 "https://github.com/ARACADERISE/32bitOs\n\n",
-	//	LCOB,
-	//	1
-	//);
+	setCoords(10, 4);	
+	Print((uint8_t *)"Welcome to MocaOS!\n\tCreated and Distributed by ARACADERISE(MocaCDeveloper)\n\tCopyright 2021, All Rights Reserved\n\n", MakeColor(124, 253, 236), MakeColor(0, 0, 0));
+	PutC('>', MakeColor(255, 255, 255), MakeColor(0, 0, 0));
 
-	//uint8_t c = 0;
-	//uint8_t input[8];
-	//uint8_t index = 0;
-	//CPutC('>', WOB);
 	while(1)
 	{
-	//	c = getc();
-	//	if(c == '0')
-	//	{
-	//	    if(strcmp(input, (uint8_t *)"help")==0)
-	//	        Print(
-	//	            (const uint8_t *) "\tThis is the Help Menu!\n", 
-	//	            LMOB, 
-	//	            1
-	//	        );
-          //  if(strcmp(input, (uint8_t *)"clear")==0)
-          //      clear_screen((uint32_t)WOB);
-	//	    index = 0;
-	//	    for(uint8_t i = 0; i < 8; i++)
-	//	        input[i] = '\0';
-	//	    CPutC('>', WOB);
-	//	    continue;
-	//	}
-	//	if(c)
-	//	{
-	//		input[index] = c;
-	//		index++;
-	//		CPutC(c, WOB);
-			//cursor_pos++;
-	//	}
+		c = getc((index != 0) ? 1 : 0);
+		if(c == '0')
+		{
+			if(strcmp(input, (uint8_t *) "clear")==0)
+				clear_screen();
+			else if(strcmp(input, (uint8_t *) "reboot")==0)
+			{
+				//__asm ("jmpl $0x0F000,$0x0FFF0");
+				__asm("jmpl $0xFFFF, $0x0000");
+			}
+			else {
+				CheckScreen();
+				Print((uint8_t *)"\n\t Unknown Command ", MakeColor(255, 255, 255), MakeColor(255, 0, 0));
+				Update(0, cy+1);
+			}
+
+			index=0;
+			for(int8_t i = 0; i < 8; i++)
+				input[i] = 0;
+			PutC('>', MakeColor(255, 255, 255), MakeColor(0, 0, 0));
+			continue;
+		}
+		if(c == '\4')
+		{
+			input[index] = 0;
+			index--;
+			continue;
+		}
+		if(c == '\3') continue;
+		if(c)
+		{
+			input[index] = PutC(c, MakeColor(255, 255, 255), MakeColor(0, 0, 0));
+			index++;
+		}
 	}
 
 }
