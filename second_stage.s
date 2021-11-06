@@ -5,44 +5,6 @@ jmp setup_vesa
 
 %include "gdt.asm"
 
-; ToDo: Remove This.
-print_hex:
-	pusha
-	xor cx, cx
-.get:
-	cmp cx, 0x04
-	je .end
-	
-	mov ax, dx
-	shr dx, 4
-	and ax, 0xF
-	
-	cmp al, 0x09
-	jle .add_it
-		
-	add al, 0x07
-.add_it:
-	add al, 0x30
-	mov si, hex_val + 5
-	sub si, cx
-	mov [si], al
-	inc cx
-	jmp .get
-.end:
-	mov si, hex_val
-	call print
-print:
-	mov ah, 0x0e
-	.loop:
-		mov al, [si]
-		cmp al, 0x0
-		je ._end
-		int 0x10
-		inc si
-		jmp .loop
-	._end:
-		ret
-
 setup_vesa:
 	
 	;sti

@@ -21,8 +21,13 @@ static uint16_t cursor_pos;
 // cx, cy - Cursor x, Cursor y. Used for accurate cursor positions.
 static uint16_t cx, cy;
 
+// 1 bit extra in between.
 #define GetCoords()	(cx * 9) + (cy * 16 * WIDTH)
+
+// Memory address of FrameBuffer.
 #define FBUF	0x4028
+
+// Memory address of our custom font.
 #define TMEM	0x2000
 
 // Keyboard scancodes.

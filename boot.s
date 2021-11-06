@@ -13,8 +13,8 @@ mov ss, ax
 mov sp, bp
 sti
 
-;xor ax, ax
-;mov es, ax
+xor ax, ax
+mov es, ax
 
 mov bl, 0x02
 mov di, 0x7E00
@@ -29,22 +29,6 @@ out dx, al
 
 call load
 
-;mov ax, 0x07E0
-;mov es, ax
-;xor bx, bx
-
-;mov ah, 0x02
-;mov al, 0x03
-;mov ch, 0x00
-;mov cl, 0x02
-;mov dh, 0x00
-;mov dl, 0x80
-;int 0x13
-;jc failed
-
-;mov ax, 0x0200
-;mov es, ax
-;xor bx, bx
 mov bl, 0x03
 mov di, 0x2000
 
@@ -58,18 +42,6 @@ out dx, al
 
 call load
 
-;mov ah, 0x02
-;mov al, 0x04
-;mov ch, 0x00
-;mov cl, 0x05
-;mov dh, 0x00
-;mov dl, 0x80
-;int 0x13
-;jc failed
-
-;mov ax, 0x0500
-;mov es, ax
-;xor bx, bx
 mov bl, 0x07
 mov di, 0x5000
 
@@ -82,15 +54,6 @@ mov al, 0x09
 out dx, al
 
 call load
-
-;mov ah, 0x02
-;mov al, 0x08
-;mov ch, 0x00
-;mov cl, 0x09
-;mov dh, 0x00
-;mov dl, 0x80
-;int 0x13
-;jc failed
 
 mov ax, 0x02
 int 0x10
@@ -145,13 +108,27 @@ load:
 
 drive_num: db 0x0
 
-failed:
+print:
 	mov ah, 0x0e
-	mov al, 'F'
-	int 0x10
+	.loop:
+		mov al, [si]
+		cmp al, 0x0
+		je ._end
+		int 0x10
+		inc si
+		jmp .loop
+	._end:
+		ret
+
+
+failed:
+	mov si, [failed_msg]
+	call print
 
 	cli
 	hlt
+
+failed_msg: db 'Failed to load.'
 
 times 510 - ($ - $$) db 0
 dw 0xaa55
