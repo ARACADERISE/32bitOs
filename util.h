@@ -214,6 +214,6 @@ void clear_screen()
 }
 
 
-#include "include/idt.h"
+//#include "include/idt.h"
 
 #endif
