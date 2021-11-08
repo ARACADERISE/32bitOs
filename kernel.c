@@ -3,10 +3,20 @@
 #include "include/idt.h"
 #include "include/string.h"
 
+static void callback()
+{
+	Print((uint8_t *)"DUDE", MakeColor(255, 255, 255), MakeColor(0, 0, 0));
+}
+
 __attribute__((section("kernel_entry"))) void kernel_main(void)
 {
-	//idt_init();
+	idt_init();
 	clear_screen();	
+
+	//set_gate(3, breakpoint, gate_trap);
+
+	//register_handler(32, &callback);
+	//__asm__ __volatile__ ("int $0x40");
 
 	uint8_t c = 0;
 	uint8_t input[8];

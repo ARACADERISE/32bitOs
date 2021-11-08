@@ -21,7 +21,7 @@ static uint16_t cursor_pos;
 // cx, cy - Cursor x, Cursor y. Used for accurate cursor positions.
 static uint16_t cx, cy;
 
-// 1 bit extra in between.
+// 1 extra bit in between.
 #define GetCoords()	(cx * 9) + (cy * 16 * WIDTH)
 
 // Memory address of FrameBuffer.

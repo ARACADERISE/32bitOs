@@ -85,7 +85,7 @@ isr_common_stub:
 	popa
 	add esp, 8
 	sti
-	iret
+	iretd
 
 %macro IRQ	2
 	global irq%1
@@ -137,7 +137,7 @@ irq_common_stub:
 	popa
 	add esp, 8
 	sti
-	iret
+	iretd
 
 ;global isr1
 

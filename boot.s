@@ -42,11 +42,11 @@ out dx, al
 
 call load
 
-mov bl, 0x07
+mov bl, 0x08
 mov di, 0x5000
 
 mov dx, 0x1F2
-mov al, 0x08
+mov al, 0x09
 out dx, al
 
 mov dx, 0x1F3

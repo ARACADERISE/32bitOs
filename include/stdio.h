@@ -29,7 +29,34 @@ uint8_t PutC(uint8_t Pchar, uint32_t fg, uint32_t bg)
 
 	return Pchar;
 }
+void Print(uint8_t *string, uint32_t fgcolor, uint32_t bgcolor);
 
+void PrintHex(uint32_t number, uint32_t fgcolor, uint32_t bgcolor)
+{
+	uint8_t hex_string[80];
+	uint8_t numbers[17] = "0123456789ABCDEF";
+	uint8_t i = 0;
+
+	while(number > 0)
+	{
+		hex_string[i] = numbers[(uint8_t)number & 0x0F];
+		number>>=4;
+		i++;
+	}
+
+	hex_string[i++] = 'x';
+	hex_string[i++] = '0';
+	hex_string[i] = '\0';
+	i--;
+	for(uint8_t j = 0; j < i; j++,i--)
+	{
+		uint8_t temp = hex_string[j];
+		hex_string[j] = hex_string[i];
+		hex_string[i] = temp;
+	}
+
+	Print((uint8_t *)hex_string, fgcolor, bgcolor);
+}
 
 /*
  * Print:

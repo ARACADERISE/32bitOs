@@ -4,8 +4,14 @@ ASM = fasm
 ASM_FILES = boot second_stage
 BIN_FILES = $(ASM_FILES:%=%.bin)
 
+all: $(ASM_FILES) makeC
+	dd if=/dev/zero of=OS.bin bs=512 count=17
+	cat $(BIN_FILES) test_font.bin kernel.bin > temp.bin
+	dd if=temp.bin of=OS.bin conv=notrunc
+	rm -rf temp.bin
+
 run: $(ASM_FILES) makeC
-	dd if=/dev/zero of=OS.bin bs=512 count=16
+	dd if=/dev/zero of=OS.bin bs=512 count=17
 	cat $(BIN_FILES) test_font.bin kernel.bin > temp.bin
 	dd if=temp.bin of=OS.bin conv=notrunc
 	rm -rf temp.bin
@@ -21,7 +27,7 @@ $(ASM_FILES):
 
 makeC:
 	$(CC) $(FLAGS)
-	ld -m elf_i386 -Tkernel.ld kernel.o idt.o --oformat binary -o kernel.bin
+	ld -m elf_i386 -Tkernel.ld kernel.o --oformat binary -o kernel.bin
 
 clean:
 	rm -rf *.o
