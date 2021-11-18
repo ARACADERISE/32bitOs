@@ -5,14 +5,14 @@ ASM_FILES = boot second_stage
 BIN_FILES = $(ASM_FILES:%=%.bin)
 
 all: $(ASM_FILES) makeC
-	dd if=/dev/zero of=OS.bin bs=512 count=17
-	cat $(BIN_FILES) test_font.bin kernel.bin > temp.bin
+	dd if=/dev/zero of=OS.bin bs=512 count=19
+	cat $(BIN_FILES) test_font.bin file_manager.bin kernel.bin > temp.bin
 	dd if=temp.bin of=OS.bin conv=notrunc
 	rm -rf temp.bin
 
 run: $(ASM_FILES) makeC
-	dd if=/dev/zero of=OS.bin bs=512 count=17
-	cat $(BIN_FILES) test_font.bin kernel.bin > temp.bin
+	dd if=/dev/zero of=OS.bin bs=512 count=19
+	cat $(BIN_FILES) test_font.bin file_manager.bin kernel.bin > temp.bin
 	dd if=temp.bin of=OS.bin conv=notrunc
 	rm -rf temp.bin
 	qemu-system-i386 -drive format=raw,file=OS.bin,if=ide,index=0,media=disk
@@ -21,6 +21,7 @@ run: $(ASM_FILES) makeC
 $(ASM_FILES):
 	nasm -f bin -o $@.bin $@.s
 	nasm -f bin -o test_font.bin test_font.s
+	nasm -f bin -o file_manager.bin file_manager.s
 	nasm -felf32 -o idt.o idt.asm
 	#fasm $@.s $@.bin
 	#fasm test_font.s test_font.bin

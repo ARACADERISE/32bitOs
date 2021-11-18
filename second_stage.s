@@ -6,6 +6,7 @@ jmp setup_vesa
 %include "gdt.asm"
 
 setup_vesa:
+		
 	
 	;sti
 
@@ -28,6 +29,13 @@ setup_vesa:
 	mov si, [offset]
 
 	jmp find_mode
+errr:
+	mov ah, 0x0e
+	mov al, 'E'
+	int 0x10
+
+	cli
+	hlt
 
 find_mode:
 	mov dx, [fs:si]

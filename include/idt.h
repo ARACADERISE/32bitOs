@@ -41,12 +41,7 @@ void set_gate(uint8_t num, void *base, uint8_t flags)
 	_Idt->low		= (uint32_t)base & 0xFFFF;
 	_Idt->high		= ((uint32_t) base >> 16) & 0xFFFF;
 	_Idt->kernel_cs		= 0x08;
-	_Idt->attributes 	= flags;// | 0x60;
-}
-
-void memset(void *ptr, uint32_t val, uint32_t c)
-{
-	__asm__ __volatile__ ("cld; rep stosb" : "+c" (c), "+D" (ptr) : "a" (val) : "memory");
+	_Idt->attributes 	= flags | 0x60;
 }
 
 /*
@@ -55,24 +50,32 @@ void memset(void *ptr, uint32_t val, uint32_t c)
 __attribute__ ((interrupt))
 void exception_handler_err(interrupt_frame *_interrupt, uint32_t err_code)
 {
-	Print((uint8_t *)"ERR CODE", MakeColor(255, 255, 255), MakeColor(0, 0, 0));
+	//Print((uint8_t *)"ERR CODE", MakeColor(255, 255, 255), MakeColor(0, 0, 0), 0);
+	if(err_code == 0xFFFC)
+		__asm("int $0x3");
 }
 __attribute__ ((interrupt))
 void exc_handler(interrupt_frame *_interrupt)
 {
-	//PrintHex(_interrupt->cs, MakeColor(255, 255, 255), MakeColor(0, 0, 0));
-	Print((uint8_t *)"NO ERR CODE", MakeColor(255, 255, 255), MakeColor(0, 0, 0));
+	//PrintHex(_interrupt->ip, MakeColor(255, 255, 255), MakeColor(0, 0, 0));
+	//Print((uint8_t *)"NO ERR CODE", MakeColor(255, 255, 255), MakeColor(0, 0, 0), 0);
+	__asm("hlt");
 }
 __attribute__ ((interrupt))
 void int_handler(interrupt_frame *_interrupt)
 {
-	Print((uint8_t *)"Interrupt", MakeColor(255, 255, 255), MakeColor(0, 0, 0));
+	//Print((uint8_t *)"Interrupt", MakeColor(255, 255, 255), MakeColor(0, 0, 0), 0);
 }
 
 __attribute__((interrupt))
 void interrupt_03(interrupt_frame *_interrupt)
 {
-	Print((uint8_t*)"INTERRUPT 03", MakeColor(255, 255, 255), MakeColor(0, 0, 0));
+	uint8_t good = 0x02;
+	while(good & 0x02)
+		good = inb(0x64);
+	outb(0x64, 0xFE);
+	_interrupt->ip++;
+	__asm("hlt");
 }
 
 /*
@@ -101,34 +104,26 @@ void *interrupts_with_err[8] = {
 
 void idt_init()
 {
-	_idtr.limit = (sizeof(idt) * 256) - 1;
-	_idtr.base = (uint32_t)&_idt[0];
+	
+	//_idtr.limit = (sizeof(idt) * 256) - 1;
+	_idtr.limit = (uint16_t) sizeof(_idt);
+	_idtr.base = (uint32_t)&_idt;
 
 	memset(&_idt, 0, sizeof(idt) * 256);
 
 	for(uint8_t i = 0; i < 32; i++)
 	{
-		switch(i)
+		if(i == 8 || i == 10 || i == 11 || i == 12 ||
+		   i == 13 || i == 14 || i == 17 || i == 21)
 		{
-			case 8:
-			case 10:
-			case 11:
-			case 12:
-			case 13:
-			case 14:
-			case 17:
-			case 21:
-			{
-				set_gate(i, interrupts_with_err[iwerr_index], gate_trap);
-				iwerr_index++;
-			}
-			default:
-			{
-				set_gate(i, interrupts_no_err[inerr_index], gate_trap);
-				inerr_index++;
-			}
+			set_gate(i, interrupts_with_err[iwerr_index], gate_trap);
+			iwerr_index++;
 		}
-
+		else
+		{
+			set_gate(i, interrupts_no_err[inerr_index], gate_trap);
+			inerr_index++;
+		}
 	}
 
 	for(uint16_t i = 32; i < 256; i++)
@@ -137,48 +132,7 @@ void idt_init()
 	}
 
 	__asm__ __volatile__("lidt %0" : : "memory"(_idtr));
+	//__asm__ __volatile__("sti");
 }
-/*
- * KEEP FOR POSSIBLE REFERENCE
-typedef struct registers
-{
-	uint32_t ds;
-	uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;
-	uint32_t int_no, err_code;
-	uint32_t eip, cs, eflags, useresp, ss;
-} Registers;
-
-typedef void (*isr_t)(Registers);
-isr_t handlers[256];
-void r_interrupt_handler(uint8_t n, isr_t h)
-{
-	handlers[n] = h;
-}
-
-void isr_handle(Registers r)
-{
-	if(r.int_no == 1)
-		Print((uint8_t *)"YES", MakeColor(255, 255, 255), MakeColor(0, 0, 0));
-}
-void irq_handle(Registers r)
-{
-	if(r.int_no >= 40)
-		outb(0xA0, 0x20);
-	outb(0x20, 0x20);
-
-	if(handlers[r.int_no] != 0)
-	{
-		if(r.int_no == 1)
-			Print((uint8_t *)"OK", MakeColor(0, 200, 200), MakeColor(0, 0, 0));
-		isr_t h = handlers[r.int_no-32];
-		h(r);
-	}
-}
-
-void isr1_handle()
-{
-	outb(0x20, 0x20);
-	outb(0xa0, 0x20);
-}*/
 
 #endif

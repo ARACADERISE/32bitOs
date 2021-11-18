@@ -42,15 +42,28 @@ out dx, al
 
 call load
 
-mov bl, 0x08
-mov di, 0x5000
+mov bl, 0x00
+mov di, 0x3000
 
 mov dx, 0x1F2
-mov al, 0x09
+mov al, 0x01
 out dx, al
 
 mov dx, 0x1F3
 mov al, 0x09
+out dx, al
+
+call load
+
+mov bl, 0x09
+mov di, 0x5000
+
+mov dx, 0x1F2
+mov al, 0x0A
+out dx, al
+
+mov dx, 0x1F3
+mov al, 0xA
 out dx, al
 
 call load
@@ -83,6 +96,10 @@ load:
 	out dx, al
 
 	.loop:
+		in al, dx
+		test al, 0x0
+		jne .loop
+
 		in al, dx
 		test al, 8
 		je .loop
